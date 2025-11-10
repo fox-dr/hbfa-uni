@@ -1,0 +1,16 @@
+{
+  "name": "@hbfa/sales-ui",
+  "version": "1.0.0",
+  "description": "HBFA Sales UI - React-based sales interface for offer management and tracking",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'This package is a placeholder. To use sales-ui, migrate the full codebase from hbfa-sales-ui repository.'",
+    "build": "echo 'This package is a placeholder. To use sales-ui, migrate the full codebase from hbfa-sales-ui repository.'",
+    "preview": "echo 'This package is a placeholder.'",
+    "lint": "echo 'This package is a placeholder.'",
+    "test": "echo 'This package is a placeholder.'"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

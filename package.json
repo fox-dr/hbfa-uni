@@ -1,0 +1,39 @@
+{
+  "name": "hbfa-uni",
+  "version": "1.0.0",
+  "description": "Unified monorepo for Homes Built For America systems",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "dev:sales-ui": "npm run dev --workspace=packages/sales-ui",
+    "build:sales-ui": "npm run build --workspace=packages/sales-ui",
+    "dev:ops-erp": "echo 'Navigate to packages/ops-erp for Python development'",
+    "clean": "npm run clean --workspaces --if-present && rm -rf node_modules"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fox-dr/hbfa-uni.git"
+  },
+  "keywords": [
+    "monorepo",
+    "hbfa",
+    "sales",
+    "operations",
+    "erp"
+  ],
+  "author": "HBFA Team",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/fox-dr/hbfa-uni/issues"
+  },
+  "homepage": "https://github.com/fox-dr/hbfa-uni#readme",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
