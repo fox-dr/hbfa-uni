@@ -6,11 +6,17 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+# Restrict GITHUB_TOKEN permissions to minimum required
+permissions:
+  contents: read
+
 jobs:
   # Lint and test sales-ui package
   sales-ui:
     name: Sales UI - Lint & Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: packages/sales-ui
@@ -42,6 +48,8 @@ jobs:
   ops-erp:
     name: Ops ERP - Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: packages/ops-erp
@@ -81,6 +89,8 @@ jobs:
   workspace:
     name: Workspace - Verify
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
