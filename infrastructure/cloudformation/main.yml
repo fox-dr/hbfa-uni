@@ -114,6 +114,22 @@ Resources:
         - AttributeName: contract_unit_number
           KeyType: RANGE
 
+  HolidaysTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'hbfa_holidays_${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: project_id
+          AttributeType: S
+        - AttributeName: date
+          AttributeType: S
+      KeySchema:
+        - AttributeName: project_id
+          KeyType: HASH
+        - AttributeName: date
+          KeyType: RANGE
+
   # IAM Role for Lambda functions
   LambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -145,7 +161,147 @@ Resources:
                   - !GetAtt UnitsTable.Arn
                   - !GetAtt MilestonesTable.Arn
                   - !GetAtt SalesTable.Arn
+                  - !GetAtt HolidaysTable.Arn
                   - !Sub '${UnitsTable.Arn}/index/*'
+
+  # Lambda Functions
+  UnitsFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'hbfa-unified-units-${Environment}'
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          // Placeholder - deploy actual code separately
+          exports.handler = async () => ({ statusCode: 200, body: 'OK' })
+      Environment:
+        Variables:
+          UNITS_TABLE: !Ref UnitsTable
+          AWS_REGION: !Ref AWS::Region
+
+  MilestonesFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'hbfa-unified-milestones-${Environment}'
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          // Placeholder - deploy actual code separately
+          exports.handler = async () => ({ statusCode: 200, body: 'OK' })
+      Environment:
+        Variables:
+          MILESTONES_TABLE: !Ref MilestonesTable
+          AWS_REGION: !Ref AWS::Region
+
+  TimelineFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'hbfa-unified-timeline-${Environment}'
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          // Placeholder - deploy actual code separately
+          exports.handler = async () => ({ statusCode: 200, body: 'OK' })
+      Environment:
+        Variables:
+          MILESTONES_TABLE: !Ref MilestonesTable
+          UNITS_TABLE: !Ref UnitsTable
+          SALES_TABLE: !Ref SalesTable
+          AWS_REGION: !Ref AWS::Region
+
+  SalesStatusFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'hbfa-unified-sales-status-${Environment}'
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          // Placeholder - deploy actual code separately
+          exports.handler = async () => ({ statusCode: 200, body: 'OK' })
+      Environment:
+        Variables:
+          SALES_TABLE: !Ref SalesTable
+          AWS_REGION: !Ref AWS::Region
+
+  HolidaysFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'hbfa-unified-holidays-${Environment}'
+      Runtime: nodejs18.x
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          // Placeholder - deploy actual code separately
+          exports.handler = async () => ({ statusCode: 200, body: 'OK' })
+      Environment:
+        Variables:
+          HOLIDAYS_TABLE: !Ref HolidaysTable
+          AWS_REGION: !Ref AWS::Region
+
+  # API Gateway
+  ApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub 'hbfa-unified-api-${Environment}'
+      Description: 'HBFA Unified Platform API'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # API Gateway Resources
+  ApiResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ParentId: !GetAtt ApiGateway.RootResourceId
+      PathPart: 'api'
+
+  UnitsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ParentId: !Ref ApiResource
+      PathPart: 'units'
+
+  # API Gateway Methods
+  UnitsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref UnitsResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UnitsFunction.Arn}/invocations'
+
+  # Lambda Permissions
+  UnitsLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref UnitsFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub '${ApiGateway}/*/GET/api/units'
+
+  # API Gateway Deployment
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - UnitsMethod
+    Properties:
+      RestApiId: !Ref ApiGateway
+      StageName: !Ref Environment
 
 Outputs:
   WebsiteURL:
@@ -171,3 +327,9 @@ Outputs:
     Value: !Ref SalesTable
     Export:
       Name: !Sub '${AWS::StackName}-SalesTable'
+
+  ApiGatewayUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiUrl'

@@ -9,8 +9,10 @@
     "preview": "vite preview",
     "test": "vitest",
     "lint": "eslint src --ext js,jsx",
-    "deploy:dev": "aws cloudformation deploy --template-file infrastructure/cloudformation/main.yml --stack-name hbfa-unified-dev --parameter-overrides Environment=dev",
-    "deploy:prod": "aws cloudformation deploy --template-file infrastructure/cloudformation/main.yml --stack-name hbfa-unified-prod --parameter-overrides Environment=prod"
+    "deploy:dev": "aws cloudformation deploy --template-file infrastructure/cloudformation/main.yml --stack-name hbfa-unified-dev --parameter-overrides Environment=dev --capabilities CAPABILITY_NAMED_IAM",
+    "deploy:prod": "aws cloudformation deploy --template-file infrastructure/cloudformation/main.yml --stack-name hbfa-unified-prod --parameter-overrides Environment=prod --capabilities CAPABILITY_NAMED_IAM",
+    "deploy:lambdas": "node infrastructure/scripts/deploy-lambdas.js",
+    "deploy:full": "npm run build && npm run deploy:dev && npm run deploy:lambdas"
   },
   "dependencies": {
     "react": "^18.2.0",

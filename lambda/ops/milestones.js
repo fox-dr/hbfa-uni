@@ -4,7 +4,7 @@ import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@a
 const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-2' })
 const docClient = DynamoDBDocumentClient.from(client)
 
-const TABLE_NAME = process.env.MILESTONES_TABLE || 'hbfa_milestones_dev'
+const MILESTONES_TABLE = process.env.MILESTONES_TABLE || 'hbfa_milestones_dev'
 
 export const handler = async (event) => {
   const headers = {
@@ -52,7 +52,7 @@ async function getMilestones(pathParameters, headers) {
   if (unit) {
     // Get specific unit milestones
     const command = new GetCommand({
-      TableName: TABLE_NAME,
+      TableName: MILESTONES_TABLE,
       Key: {
         pk: `${project}#${building}`,
         sk: unit
@@ -67,7 +67,7 @@ async function getMilestones(pathParameters, headers) {
   } else if (building) {
     // Get all units in building
     const command = new QueryCommand({
-      TableName: TABLE_NAME,
+      TableName: MILESTONES_TABLE,
       KeyConditionExpression: 'pk = :pk',
       ExpressionAttributeValues: {
         ':pk': `${project}#${building}`
@@ -100,7 +100,7 @@ async function saveMilestones(data, headers) {
   }
 
   const command = new PutCommand({
-    TableName: TABLE_NAME,
+    TableName: MILESTONES_TABLE,
     Item: {
       pk: `${project_id}#${building_id}`,
       sk: unit_number,

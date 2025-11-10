@@ -1,5 +1,5 @@
 // Sales status API client for unified platform
-const API_BASE = import.meta.env.VITE_API_BASE || '/api';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://api.hbfa-unified.com/dev/api';
 
 export async function saveSalesStatus({
   project_id,
@@ -11,7 +11,7 @@ export async function saveSalesStatus({
   status_label,
   status_color
 }) {
-  const response = await fetch(`${API_BASE}/sales/status`, {
+  const response = await fetch(`${API_BASE}/sales-status`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

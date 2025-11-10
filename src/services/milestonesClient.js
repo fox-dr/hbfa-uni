@@ -1,5 +1,5 @@
 // Milestones API client for unified platform
-const API_BASE = import.meta.env.VITE_API_BASE || '/api';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://api.hbfa-unified.com/dev/api';
 
 export async function saveUnitsSchedule({ project_id, building_id, unit_number, unit }) {
   const response = await fetch(`${API_BASE}/milestones/units`, {
@@ -11,7 +11,7 @@ export async function saveUnitsSchedule({ project_id, building_id, unit_number, 
       project_id,
       building_id,
       unit_number,
-      unit
+      milestones: unit
     })
   });
   
@@ -31,7 +31,7 @@ export async function saveBuildingSchedule({ project_id, building_id, building }
     body: JSON.stringify({
       project_id,
       building_id,
-      building
+      milestones: building
     })
   });
   
@@ -60,7 +60,7 @@ export async function fetchMilestonesTimeline({ project_id, building_id, include
     include_events: include_events.toString()
   });
   
-  const response = await fetch(`${API_BASE}/milestones/timeline?${params}`);
+  const response = await fetch(`${API_BASE}/timeline?${params}`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch milestones timeline: ${response.statusText}`);
