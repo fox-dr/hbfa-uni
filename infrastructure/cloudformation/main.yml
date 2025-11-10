@@ -1,0 +1,173 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'HBFA Unified Platform Infrastructure'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, prod]
+    Description: Environment name
+
+Resources:
+  # S3 Bucket for static website hosting
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'hbfa-unified-${Environment}-${AWS::AccountId}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # CloudFront Origin Access Control
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub 'hbfa-unified-${Environment}-oac'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # CloudFront Distribution
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt WebsiteBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+            OriginAccessControlId: !GetAtt OriginAccessControl.Id
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # Managed-CachingOptimized
+          OriginRequestPolicyId: 88a5eaf4-2fd4-4709-b370-b4c650ea3fcf  # Managed-CORS-S3Origin
+        DefaultRootObject: index.html
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        Enabled: true
+        HttpVersion: http2
+
+  # DynamoDB Tables
+  UnitsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'hbfa_units_${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: project_id
+          AttributeType: S
+        - AttributeName: unit_number
+          AttributeType: S
+        - AttributeName: building_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: project_id
+          KeyType: HASH
+        - AttributeName: unit_number
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: gsi_project_building
+          KeySchema:
+            - AttributeName: project_id
+              KeyType: HASH
+            - AttributeName: building_id
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  MilestonesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'hbfa_milestones_${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  SalesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'hbfa_sales_${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: project_id
+          AttributeType: S
+        - AttributeName: contract_unit_number
+          AttributeType: S
+      KeySchema:
+        - AttributeName: project_id
+          KeyType: HASH
+        - AttributeName: contract_unit_number
+          KeyType: RANGE
+
+  # IAM Role for Lambda functions
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'hbfa-unified-lambda-${Environment}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt UnitsTable.Arn
+                  - !GetAtt MilestonesTable.Arn
+                  - !GetAtt SalesTable.Arn
+                  - !Sub '${UnitsTable.Arn}/index/*'
+
+Outputs:
+  WebsiteURL:
+    Description: CloudFront distribution URL
+    Value: !Sub 'https://${CloudFrontDistribution.DomainName}'
+    Export:
+      Name: !Sub '${AWS::StackName}-WebsiteURL'
+
+  UnitsTableName:
+    Description: Units table name
+    Value: !Ref UnitsTable
+    Export:
+      Name: !Sub '${AWS::StackName}-UnitsTable'
+
+  MilestonesTableName:
+    Description: Milestones table name
+    Value: !Ref MilestonesTable
+    Export:
+      Name: !Sub '${AWS::StackName}-MilestonesTable'
+
+  SalesTableName:
+    Description: Sales table name
+    Value: !Ref SalesTable
+    Export:
+      Name: !Sub '${AWS::StackName}-SalesTable'
